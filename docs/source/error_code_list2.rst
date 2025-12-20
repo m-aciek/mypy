@@ -709,6 +709,8 @@ If enabled with :option:`--enable-error-code unsafe-subtype <mypy --enable-error
 mypy will block certain subtype relationships that are unsafe at runtime despite
 being valid in Python's type system.
 
+**datetime/date incompatibility**
+
 The primary use case is blocking the ``datetime.datetime`` to ``datetime.date``
 inheritance relationship. While ``datetime`` is a subclass of ``date`` at runtime,
 comparing a ``datetime`` with a ``date`` raises a ``TypeError``. When this error
@@ -751,3 +753,30 @@ preventing the runtime error.
 
 **Note:** Equality comparisons (``==`` and ``!=``) still work between these types,
 as ``__eq__`` accepts ``object`` as its parameter.
+
+**str/Iterable[str] incompatibility**
+
+Another common issue is using a ``str`` where ``Iterable[str]`` is expected. While
+``str`` is iterable and yields strings (characters), this often leads to bugs because
+developers expect iteration over a collection of strings, not individual characters.
+
+Example:
+
+.. code-block:: python
+
+    # mypy: enable-error-code="unsafe-subtype"
+    from typing import Iterable
+
+    def process_items(items: Iterable[str]) -> None:
+        for item in items:
+            print(f"Item: {item}")
+
+    # Error: Argument 1 to "process_items" has incompatible type "str"; expected "Iterable[str]"
+    process_items("hello")  # Would iterate over: 'h', 'e', 'l', 'l', 'o'
+
+    # OK: Pass a list of strings instead
+    process_items(["hello"])  # Iterates over: "hello"
+
+This prevents a common source of bugs where a single string is accidentally treated
+as a collection of strings, with iteration yielding individual characters instead of
+the full string.

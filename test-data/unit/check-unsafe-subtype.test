@@ -274,3 +274,29 @@ class datetime(date):
     def __le__(self, other: datetime) -> bool: ...  # type: ignore[override]
     def __gt__(self, other: datetime) -> bool: ...  # type: ignore[override]
     def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
+
+[case testStrIterableBlocking]
+# flags: --enable-error-code unsafe-subtype
+from typing import Iterable
+from collections.abc import Iterable as ABCIterable
+
+def process_typing(items: Iterable[str]) -> None:
+    pass
+
+def process_abc(items: ABCIterable[str]) -> None:
+    pass
+
+# str to Iterable[str] - blocked
+s: str = "hello"
+process_typing(s)  # E: Argument 1 to "process_typing" has incompatible type "str"; expected "Iterable[str]"
+
+# str to collections.abc.Iterable[str] - blocked
+process_abc(s)  # E: Argument 1 to "process_abc" has incompatible type "str"; expected "Iterable[str]"
+
+# Assignment - blocked
+items: Iterable[str] = "hello"  # E: Incompatible types in assignment (expression has type "str", variable has type "Iterable[str]")
+
+# list[str] to Iterable[str] - OK
+lst: list[str] = ["hello", "world"]
+process_typing(lst)  # OK
+[builtins fixtures/list.pyi]

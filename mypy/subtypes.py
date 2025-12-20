@@ -91,6 +91,8 @@ IS_EXPLICIT_SETTER: Final = 5
 # as a subtype can cause runtime errors.
 UNSAFE_SUBTYPING_PAIRS: Final = [
     ("datetime.datetime", "datetime.date"),
+    ("builtins.str", "typing.Iterable"),
+    ("builtins.str", "collections.abc.Iterable"),
 ]
 
 TypeParameterChecker: _TypeAlias = Callable[[Type, Type, int, bool, "SubtypeContext"], bool]
