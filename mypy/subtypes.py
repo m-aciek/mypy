@@ -86,13 +86,13 @@ IS_VAR: Final = 4
 IS_EXPLICIT_SETTER: Final = 5
 
 # Known unsafe subtyping relationships that should trigger warnings.
-# Each tuple is (subclass_fullname, superclass_fullname).
+# Each tuple is (subclass_fullname, superclass_fullname, error_code).
 # These are cases where a class is a subclass at runtime but treating it
 # as a subtype can cause runtime errors.
 UNSAFE_SUBTYPING_PAIRS: Final = [
-    ("datetime.datetime", "datetime.date"),
-    ("builtins.str", "typing.Iterable"),
-    ("builtins.str", "collections.abc.Iterable"),
+    ("datetime.datetime", "datetime.date", codes.UNSAFE_SUBTYPE_DATETIME),
+    ("builtins.str", "typing.Iterable", codes.UNSAFE_SUBTYPE_STR),
+    ("builtins.str", "collections.abc.Iterable", codes.UNSAFE_SUBTYPE_STR),
 ]
 
 TypeParameterChecker: _TypeAlias = Callable[[Type, Type, int, bool, "SubtypeContext"], bool]
@@ -542,11 +542,15 @@ class SubtypeVisitor(TypeVisitor[bool]):
             lname = left.type.fullname
             
             # Check if this is an unsafe subtype relationship that should be blocked
-            if self.options and codes.UNSAFE_SUBTYPE in self.options.enabled_error_codes:
+            if self.options:
                 # Block unsafe subtyping relationships when the error code is enabled
-                for subclass, superclass in UNSAFE_SUBTYPING_PAIRS:
+                for subclass, superclass, error_code in UNSAFE_SUBTYPING_PAIRS:
                     if lname == subclass and rname == superclass:
-                        return False
+                        # Check if the specific sub-code is enabled, OR if the parent code is enabled
+                        # (parent code enables all sub-codes)
+                        if (error_code in self.options.enabled_error_codes or
+                                codes.UNSAFE_SUBTYPE in self.options.enabled_error_codes):
+                            return False
             
             # Always try a nominal check if possible,
             # there might be errors that a user wants to silence *once*.

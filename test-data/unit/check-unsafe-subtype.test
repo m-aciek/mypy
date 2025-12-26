@@ -300,3 +300,58 @@ items: Iterable[str] = "hello"  # E: Incompatible types in assignment (expressio
 lst: list[str] = ["hello", "world"]
 process_typing(lst)  # OK
 [builtins fixtures/list.pyi]
+
+[case testUnsafeSubtypeDatetimeSubcode]
+# flags: --enable-error-code unsafe-subtype-datetime
+from datetime import date, datetime
+from typing import Iterable
+
+# datetime/date should be blocked
+d: date = datetime.now()  # E: Incompatible types in assignment (expression has type "datetime", variable has type "date")
+
+def accept_date(d: date) -> None:
+    pass
+
+accept_date(datetime.now())  # E: Argument 1 to "accept_date" has incompatible type "datetime"; expected "date"
+
+# str/Iterable should NOT be blocked (different subcode)
+def process(items: Iterable[str]) -> None:
+    pass
+
+s: str = "hello"
+process(s)  # OK - str check not enabled
+[builtins fixtures/classmethod.pyi]
+[file datetime.pyi]
+class date:
+    def __init__(self, year: int, month: int, day: int) -> None: ...
+    @classmethod
+    def today(cls) -> date: ...
+    def __lt__(self, other: date) -> bool: ...
+    def __le__(self, other: date) -> bool: ...
+    def __gt__(self, other: date) -> bool: ...
+    def __ge__(self, other: date) -> bool: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __ne__(self, other: object) -> bool: ...
+
+class datetime(date):
+    def __init__(self, year: int, month: int, day: int, hour: int = 0, minute: int = 0, second: int = 0, microsecond: int = 0) -> None: ...
+    @classmethod
+    def now(cls) -> datetime: ...
+    def __lt__(self, other: datetime) -> bool: ...  # type: ignore[override]
+    def __le__(self, other: datetime) -> bool: ...  # type: ignore[override]
+    def __gt__(self, other: datetime) -> bool: ...  # type: ignore[override]
+    def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
+
+[case testUnsafeSubtypeStrSubcode]
+# flags: --enable-error-code unsafe-subtype-str
+from typing import Iterable
+
+# str/Iterable should be blocked
+def process(items: Iterable[str]) -> None:
+    pass
+
+s: str = "hello"
+process(s)  # E: Argument 1 to "process" has incompatible type "str"; expected "Iterable[str]"
+
+items: Iterable[str] = "hello"  # E: Incompatible types in assignment (expression has type "str", variable has type "Iterable[str]")
+[builtins fixtures/list.pyi]

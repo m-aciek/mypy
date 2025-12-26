@@ -780,3 +780,40 @@ Example:
 This prevents a common source of bugs where a single string is accidentally treated
 as a collection of strings, with iteration yielding individual characters instead of
 the full string.
+
+**Fine-grained control with sub-codes**
+
+You can enable checks for specific unsafe subtype relationships using sub-codes:
+
+- ``unsafe-subtype-datetime``: Only check datetime/date relationships
+- ``unsafe-subtype-str``: Only check str/Iterable[str] relationships
+
+Example:
+
+.. code-block:: python
+
+    # Only check datetime/date issues
+    # mypy: enable-error-code="unsafe-subtype-datetime"
+    from datetime import date, datetime
+    from typing import Iterable
+
+    d: date = datetime.now()  # Error
+    
+    def process(items: Iterable[str]) -> None:
+        pass
+    
+    process("hello")  # OK - str check not enabled
+
+You can enable multiple sub-codes or use ``unsafe-subtype`` to enable all checks:
+
+.. code-block:: bash
+
+    # Enable only specific checks
+    mypy --enable-error-code unsafe-subtype-datetime --enable-error-code unsafe-subtype-str file.py
+    
+    # Enable all unsafe subtype checks
+    mypy --enable-error-code unsafe-subtype file.py
+
+**Note about error codes:** When unsafe subtype checks are enabled, mypy blocks the subtype
+relationship, causing standard type errors (``assignment``, ``arg-type``, etc.) to be reported.
+These errors can be selectively disabled or configured using the sub-codes listed above.

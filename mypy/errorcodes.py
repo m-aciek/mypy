@@ -178,6 +178,20 @@ UNSAFE_SUBTYPE: Final = ErrorCode(
     "General",
     default_enabled=False,
 )
+UNSAFE_SUBTYPE_DATETIME: Final = ErrorCode(
+    "unsafe-subtype-datetime",
+    "Warn about unsafe datetime/date subtyping",
+    "General",
+    default_enabled=False,
+    sub_code_of=UNSAFE_SUBTYPE,
+)
+UNSAFE_SUBTYPE_STR: Final = ErrorCode(
+    "unsafe-subtype-str",
+    "Warn about unsafe str/Iterable[str] subtyping",
+    "General",
+    default_enabled=False,
+    sub_code_of=UNSAFE_SUBTYPE,
+)
 NO_ANY_UNIMPORTED: Final = ErrorCode(
     "no-any-unimported", 'Reject "Any" types from unfollowed imports', "General"
 )
