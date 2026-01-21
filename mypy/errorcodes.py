@@ -172,25 +172,11 @@ ASSERT_TYPE: Final = ErrorCode("assert-type", "Check that assert_type() call suc
 COMPARISON_OVERLAP: Final = ErrorCode(
     "comparison-overlap", "Check that types in comparisons and 'in' expressions overlap", "General"
 )
-UNSAFE_SUBTYPE: Final = ErrorCode(
-    "unsafe-subtype",
-    "Warn about unsafe subtyping relationships that may cause runtime errors",
+SAFE_DATETIME: Final = ErrorCode(
+    "safe-datetime",
+    "Disallow datetime where date is expected",
     "General",
     default_enabled=False,
-)
-UNSAFE_SUBTYPE_DATETIME: Final = ErrorCode(
-    "unsafe-subtype-datetime",
-    "Warn about unsafe datetime/date subtyping",
-    "General",
-    default_enabled=False,
-    sub_code_of=UNSAFE_SUBTYPE,
-)
-UNSAFE_SUBTYPE_STR: Final = ErrorCode(
-    "unsafe-subtype-str",
-    "Warn about unsafe str/Iterable[str] subtyping",
-    "General",
-    default_enabled=False,
-    sub_code_of=UNSAFE_SUBTYPE,
 )
 NO_ANY_UNIMPORTED: Final = ErrorCode(
     "no-any-unimported", 'Reject "Any" types from unfollowed imports', "General"

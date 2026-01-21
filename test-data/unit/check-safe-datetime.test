@@ -1,5 +1,5 @@
 [case testDatetimeVsDateComparison]
-# flags: --enable-error-code unsafe-subtype
+# flags: --enable-error-code safe-datetime
 from datetime import date, datetime
 
 dt: datetime
@@ -79,7 +79,7 @@ class datetime(date):
     def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
 
 [case testDatetimeVsDateComparisonExplicitTypes]
-# flags: --enable-error-code unsafe-subtype
+# flags: --enable-error-code safe-datetime
 from datetime import date, datetime
 
 def compare_datetime_date(dt: datetime, d: date) -> bool:
@@ -107,7 +107,7 @@ class datetime(date):
     def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
 
 [case testDatetimeComparisonOK]
-# flags: --enable-error-code unsafe-subtype
+# flags: --enable-error-code safe-datetime
 from datetime import date, datetime
 
 dt1: datetime
@@ -145,7 +145,7 @@ class datetime(date):
     def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
 
 [case testDatetimeVsDateComparisonWithNow]
-# flags: --enable-error-code unsafe-subtype
+# flags: --enable-error-code safe-datetime
 from datetime import date, datetime
 
 if datetime.now() < date.today():  # E: Unsupported operand types for < ("datetime" and "date")
@@ -173,7 +173,7 @@ class datetime(date):
     def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
 
 [case testDatetimeVsDateComparisonInExpression]
-# flags: --enable-error-code unsafe-subtype
+# flags: --enable-error-code safe-datetime
 from datetime import date, datetime
 
 dt: datetime
@@ -203,7 +203,7 @@ class datetime(date):
     def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
 
 [case testDateVsDateMixedWithDatetime]
-# flags: --enable-error-code unsafe-subtype
+# flags: --enable-error-code safe-datetime
 from datetime import date, datetime
 
 def compare_dates(d1: date, d2: date) -> bool:
@@ -238,7 +238,7 @@ class datetime(date):
     def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
 
 [case testInheritanceBlocking]
-# flags: --enable-error-code unsafe-subtype
+# flags: --enable-error-code safe-datetime
 from datetime import date, datetime
 
 # Assignment should be blocked
@@ -275,83 +275,3 @@ class datetime(date):
     def __gt__(self, other: datetime) -> bool: ...  # type: ignore[override]
     def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
 
-[case testStrIterableBlocking]
-# flags: --enable-error-code unsafe-subtype
-from typing import Iterable
-from collections.abc import Iterable as ABCIterable
-
-def process_typing(items: Iterable[str]) -> None:
-    pass
-
-def process_abc(items: ABCIterable[str]) -> None:
-    pass
-
-# str to Iterable[str] - blocked
-s: str = "hello"
-process_typing(s)  # E: Argument 1 to "process_typing" has incompatible type "str"; expected "Iterable[str]"
-
-# str to collections.abc.Iterable[str] - blocked
-process_abc(s)  # E: Argument 1 to "process_abc" has incompatible type "str"; expected "Iterable[str]"
-
-# Assignment - blocked
-items: Iterable[str] = "hello"  # E: Incompatible types in assignment (expression has type "str", variable has type "Iterable[str]")
-
-# list[str] to Iterable[str] - OK
-lst: list[str] = ["hello", "world"]
-process_typing(lst)  # OK
-[builtins fixtures/list.pyi]
-
-[case testUnsafeSubtypeDatetimeSubcode]
-# flags: --enable-error-code unsafe-subtype-datetime
-from datetime import date, datetime
-from typing import Iterable
-
-# datetime/date should be blocked
-d: date = datetime.now()  # E: Incompatible types in assignment (expression has type "datetime", variable has type "date")
-
-def accept_date(d: date) -> None:
-    pass
-
-accept_date(datetime.now())  # E: Argument 1 to "accept_date" has incompatible type "datetime"; expected "date"
-
-# str/Iterable should NOT be blocked (different subcode)
-def process(items: Iterable[str]) -> None:
-    pass
-
-s: str = "hello"
-process(s)  # OK - str check not enabled
-[builtins fixtures/classmethod.pyi]
-[file datetime.pyi]
-class date:
-    def __init__(self, year: int, month: int, day: int) -> None: ...
-    @classmethod
-    def today(cls) -> date: ...
-    def __lt__(self, other: date) -> bool: ...
-    def __le__(self, other: date) -> bool: ...
-    def __gt__(self, other: date) -> bool: ...
-    def __ge__(self, other: date) -> bool: ...
-    def __eq__(self, other: object) -> bool: ...
-    def __ne__(self, other: object) -> bool: ...
-
-class datetime(date):
-    def __init__(self, year: int, month: int, day: int, hour: int = 0, minute: int = 0, second: int = 0, microsecond: int = 0) -> None: ...
-    @classmethod
-    def now(cls) -> datetime: ...
-    def __lt__(self, other: datetime) -> bool: ...  # type: ignore[override]
-    def __le__(self, other: datetime) -> bool: ...  # type: ignore[override]
-    def __gt__(self, other: datetime) -> bool: ...  # type: ignore[override]
-    def __ge__(self, other: datetime) -> bool: ...  # type: ignore[override]
-
-[case testUnsafeSubtypeStrSubcode]
-# flags: --enable-error-code unsafe-subtype-str
-from typing import Iterable
-
-# str/Iterable should be blocked
-def process(items: Iterable[str]) -> None:
-    pass
-
-s: str = "hello"
-process(s)  # E: Argument 1 to "process" has incompatible type "str"; expected "Iterable[str]"
-
-items: Iterable[str] = "hello"  # E: Incompatible types in assignment (expression has type "str", variable has type "Iterable[str]")
-[builtins fixtures/list.pyi]

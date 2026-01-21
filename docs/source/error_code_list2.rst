@@ -700,28 +700,22 @@ Example:
         def add_forty_two(value: int) -> int:
             return value + 42
 
-.. _code-unsafe-subtype:
+.. _code-safe-datetime:
 
-Check for unsafe subtype relationships [unsafe-subtype]
---------------------------------------------------------
+Disallow datetime where date is expected [safe-datetime]
+---------------------------------------------------------
 
-If enabled with :option:`--enable-error-code unsafe-subtype <mypy --enable-error-code>`,
-mypy will block certain subtype relationships that are unsafe at runtime despite
-being valid in Python's type system.
-
-**datetime/date incompatibility**
-
-The primary use case is blocking the ``datetime.datetime`` to ``datetime.date``
-inheritance relationship. While ``datetime`` is a subclass of ``date`` at runtime,
-comparing a ``datetime`` with a ``date`` raises a ``TypeError``. When this error
-code is enabled, mypy will prevent ``datetime`` objects from being used where
-``date`` is expected, catching these errors at type-check time.
+If enabled with :option:`--enable-error-code safe-datetime <mypy --enable-error-code>`,
+mypy will prevent ``datetime.datetime`` objects from being used where ``datetime.date``
+is expected. While ``datetime`` is a subclass of ``date`` at runtime, comparing a
+``datetime`` with a ``date`` raises a ``TypeError``. This error code catches these
+errors at type-check time.
 
 Example:
 
 .. code-block:: python
 
-    # mypy: enable-error-code="unsafe-subtype"
+    # mypy: enable-error-code="safe-datetime"
     from datetime import date, datetime
 
     # Error: Incompatible types in assignment (expression has type "datetime", variable has type "date")
@@ -748,72 +742,9 @@ runtime:
     if dt < d:
         print("never reached")
 
-When ``unsafe-subtype`` is enabled, assignment and parameter passing are blocked,
+When ``safe-datetime`` is enabled, assignment and parameter passing are blocked,
 preventing the runtime error.
 
 **Note:** Equality comparisons (``==`` and ``!=``) still work between these types,
 as ``__eq__`` accepts ``object`` as its parameter.
 
-**str/Iterable[str] incompatibility**
-
-Another common issue is using a ``str`` where ``Iterable[str]`` is expected. While
-``str`` is iterable and yields strings (characters), this often leads to bugs because
-developers expect iteration over a collection of strings, not individual characters.
-
-Example:
-
-.. code-block:: python
-
-    # mypy: enable-error-code="unsafe-subtype"
-    from typing import Iterable
-
-    def process_items(items: Iterable[str]) -> None:
-        for item in items:
-            print(f"Item: {item}")
-
-    # Error: Argument 1 to "process_items" has incompatible type "str"; expected "Iterable[str]"
-    process_items("hello")  # Would iterate over: 'h', 'e', 'l', 'l', 'o'
-
-    # OK: Pass a list of strings instead
-    process_items(["hello"])  # Iterates over: "hello"
-
-This prevents a common source of bugs where a single string is accidentally treated
-as a collection of strings, with iteration yielding individual characters instead of
-the full string.
-
-**Fine-grained control with sub-codes**
-
-You can enable checks for specific unsafe subtype relationships using sub-codes:
-
-- ``unsafe-subtype-datetime``: Only check datetime/date relationships
-- ``unsafe-subtype-str``: Only check str/Iterable[str] relationships
-
-Example:
-
-.. code-block:: python
-
-    # Only check datetime/date issues
-    # mypy: enable-error-code="unsafe-subtype-datetime"
-    from datetime import date, datetime
-    from typing import Iterable
-
-    d: date = datetime.now()  # Error
-    
-    def process(items: Iterable[str]) -> None:
-        pass
-    
-    process("hello")  # OK - str check not enabled
-
-You can enable multiple sub-codes or use ``unsafe-subtype`` to enable all checks:
-
-.. code-block:: bash
-
-    # Enable only specific checks
-    mypy --enable-error-code unsafe-subtype-datetime --enable-error-code unsafe-subtype-str file.py
-    
-    # Enable all unsafe subtype checks
-    mypy --enable-error-code unsafe-subtype file.py
-
-**Note about error codes:** When unsafe subtype checks are enabled, mypy blocks the subtype
-relationship, causing standard type errors (``assignment``, ``arg-type``, etc.) to be reported.
-These errors can be selectively disabled or configured using the sub-codes listed above.
