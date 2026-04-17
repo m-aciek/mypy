@@ -76,6 +76,7 @@ from mypy.types import (
 from mypy.types_utils import flatten_types
 from mypy.typestate import SubtypeKind, type_state
 from mypy.typevars import fill_typevars, fill_typevars_with_any
+from mypy import errorcodes as codes
 
 # Flags for detected protocol members
 IS_SETTABLE: Final = 1
@@ -83,6 +84,11 @@ IS_CLASSVAR: Final = 2
 IS_CLASS_OR_STATIC: Final = 3
 IS_VAR: Final = 4
 IS_EXPLICIT_SETTER: Final = 5
+
+# Disallow datetime.datetime where datetime.date is expected when safe-datetime is enabled.
+# While datetime is a subclass of date at runtime, comparing them raises TypeError,
+# making this inheritance relationship problematic in practice.
+DATETIME_DATE_FULLNAMES: Final = ("datetime.datetime", "datetime.date")
 
 TypeParameterChecker: _TypeAlias = Callable[[Type, Type, int, bool, "SubtypeContext"], bool]
 
@@ -533,6 +539,16 @@ class SubtypeVisitor(TypeVisitor[bool]):
                 if left.type.alt_promote and left.type.alt_promote.type is right.type:
                     return True
             rname = right.type.fullname
+            lname = left.type.fullname
+            
+            # Check if this is the datetime/date relationship that should be blocked
+            # when safe-datetime is enabled
+            if (self.options
+                    and codes.SAFE_DATETIME in self.options.enabled_error_codes
+                    and lname == DATETIME_DATE_FULLNAMES[0]
+                    and rname == DATETIME_DATE_FULLNAMES[1]):
+                return False
+            
             # Always try a nominal check if possible,
             # there might be errors that a user wants to silence *once*.
             # NamedTuples are a special case, because `NamedTuple` is not listed
